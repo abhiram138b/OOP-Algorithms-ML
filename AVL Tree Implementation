@@ -1,73 +1,177 @@
+# -----------------------------  AVL NODE  -----------------------------
+
 class AVLNode:
-    def __init__(self, data):
-        self.data = data
-        self.left = None
-        self.right = None
-        self.height = 1
+    def __init__(self, data: int):
+        """
+        Create a single node that can live inside an AVL tree.
+
+        Parameters
+        ----------
+        data : int
+            The key (payload) stored in the node.
+        """
+        self.data = data          # value stored in the node
+        self.left = None          # pointer to the left child
+        self.right = None         # pointer to the right child
+        self.height = 1           # height of the node in the tree (leaf = 1)
+
+# -----------------------------  AVL TREE  -----------------------------
 
 class AVLTree:
     def __init__(self):
+        """Initialise an empty AVL tree (no root yet)."""
         self.root = None
-    
-    def get_height(self, node):
-        if not node:
+
+    # ------------------------------------------------------------------
+    # Utility helpers
+    # ------------------------------------------------------------------
+    def get_height(self, node: AVLNode) -> int:
+        """
+        Return the height of a node; 0 if the node is None.
+        This prevents conditional checks in multiple places.
+        """
+        if not node:              # `None` has height 0
             return 0
-        return node.height
-    
-    def get_balance(self, node):
-        if not node:
+        return node.height        # otherwise return stored height
+
+    def get_balance(self, node: AVLNode) -> int:
+        """
+        Compute the balance factor of a node:
+        balance = height(left subtree) - height(right subtree)
+        Positive value  => left-heavy
+        Negative value  => right-heavy
+        Zero            => perfectly balanced
+        """
+        if not node:              # a non-existing node is perfectly balanced
             return 0
         return self.get_height(node.left) - self.get_height(node.right)
-    
-    def right_rotate(self, y):
-        x = y.left
-        T2 = x.right
-        x.right = y
-        y.left = T2
-        y.height = 1 + max(self.get_height(y.left), self.get_height(y.right))
-        x.height = 1 + max(self.get_height(x.left), self.get_height(x.right))
-        return x
-    
-    def left_rotate(self, x):
-        y = x.right
-        T2 = y.left
+
+    # ------------------------------------------------------------------
+    # Rotations (core of self-balancing)
+    # ------------------------------------------------------------------
+    def right_rotate(self, y: AVLNode) -> AVLNode:
+        """
+        Perform a right rotation around node y.
+
+                 y                             x
+                / \     right-rotate          / \
+               x   T3   -------------->      T1  y
+              / \                                / \
+             T1  T2                             T2  T3
+        """
+        x = y.left           # x becomes the new root of the rotated subtree
+        T2 = x.right         # T2 will move to y.left after rotation
+
+        # Perform rotation
+        x.right = y          # put y on the right of x
+        y.left = T2          # move T2 under y
+
+        # Update heights (bottom-up)
+        y.height = 1 + max(self.get_height(y.left),
+                           self.get_height(y.right))
+        x.height = 1 + max(self.get_height(x.left),
+                           self.get_height(x.right))
+
+        return x             # x is the new root of the rotated subtree
+
+    def left_rotate(self, x: AVLNode) -> AVLNode:
+        """
+        Perform a left rotation around node x.
+
+             x                               y
+            / \       left-rotate           / \
+           T1  y     ------------>         x  T3
+              / \                         / \
+             T2  T3                      T1  T2
+        """
+        y = x.right         # y becomes the new root after rotation
+        T2 = y.left         # T2 will move to x.right
+
+        # Perform rotation
         y.left = x
         x.right = T2
-        x.height = 1 + max(self.get_height(x.left), self.get_height(x.right))
-        y.height = 1 + max(self.get_height(y.left), self.get_height(y.right))
-        return y
-    
-    def insert(self, data):
+
+        # Update heights
+        x.height = 1 + max(self.get_height(x.left),
+                           self.get_height(x.right))
+        y.height = 1 + max(self.get_height(y.left),
+                           self.get_height(y.right))
+
+        return y            # y is the new root of the rotated subtree
+
+    # ------------------------------------------------------------------
+    # Public insert wrapper
+    # ------------------------------------------------------------------
+    def insert(self, data: int) -> None:
+        """
+        Public method to insert a key into the AVL tree.
+        Delegates to the recursive helper and updates root pointer.
+        """
         self.root = self._insert_recursive(self.root, data)
-    
-    def _insert_recursive(self, node, data):
-        if not node:
-            return AVLNode(data)
-        
-        if data < node.data:
+
+    # ------------------------------------------------------------------
+    # Recursive insertion + rebalancing
+    # ------------------------------------------------------------------
+    def _insert_recursive(self, node: AVLNode, data: int) -> AVLNode:
+        """
+        Insert `data` into the subtree rooted at `node`,
+        then rebalance that subtree and return the (possibly new) root.
+        """
+        # 1) NORMAL BST INSERT
+        if not node:                       # reached a leaf position
+            return AVLNode(data)           # create a new node
+
+        if data < node.data:               # traverse left subtree
             node.left = self._insert_recursive(node.left, data)
-        elif data > node.data:
+        elif data > node.data:             # traverse right subtree
             node.right = self._insert_recursive(node.right, data)
-        
-        node.height = 1 + max(self.get_height(node.left), self.get_height(node.right))
+        else:
+            # Duplicate keys are not allowed in this AVL implementation
+            return node
+
+        # 2) UPDATE HEIGHT OF CURRENT NODE
+        node.height = 1 + max(self.get_height(node.left),
+                              self.get_height(node.right))
+
+        # 3) GET BALANCE FACTOR TO CHECK WHETHER NODE IS UNBALANCED
         balance = self.get_balance(node)
-        
-        # Left Left Case
+
+        # 4) FOUR CASES ------------------------------------------------
+        # Case 1: Left Left  (unbalanced because left subtree is left-heavy)
         if balance > 1 and data < node.left.data:
             return self.right_rotate(node)
-        
-        # Right Right Case
+
+        # Case 2: Right Right (unbalanced because right subtree is right-heavy)
         if balance < -1 and data > node.right.data:
             return self.left_rotate(node)
-        
-        # Left Right Case
+
+        # Case 3: Left Right (left subtree is right-heavy)
         if balance > 1 and data > node.left.data:
-            node.left = self.left_rotate(node.left)
+            node.left = self.left_rotate(node.left)    # convert to Case 1
             return self.right_rotate(node)
-        
-        # Right Left Case
+
+        # Case 4: Right Left (right subtree is left-heavy)
         if balance < -1 and data < node.right.data:
-            node.right = self.right_rotate(node.right)
+            node.right = self.right_rotate(node.right) # convert to Case 2
             return self.left_rotate(node)
-        
+
+        # Node is balanced; return unchanged root pointer
         return node
+
+# =========================  QUICK DEMO  ===============================
+if __name__ == "__main__":
+    # Build an AVL tree with a handful of keys
+    avl = AVLTree()
+    for key in [20, 4, 15, 70, 50, 100, 80]:
+        avl.insert(key)
+
+    print("In-order traversal after inserts:", list(avl.inorder()))
+
+    # Search
+    print("Contains 15?", avl.search(15))
+    print("Contains 99?", avl.search(99))
+
+    # Delete a couple of keys and show traversal
+    avl.delete(70)
+    avl.delete(20)
+    print("In-order traversal after deletions:", list(avl.inorder()))
