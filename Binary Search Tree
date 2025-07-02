@@ -1,48 +1,183 @@
+# ===========================  TREE NODE CLASS  ===============================
 class TreeNode:
     def __init__(self, data):
-        self.data = data
-        self.left = None
-        self.right = None
+        """
+        Create a single node that will be part of a binary search tree.
+        
+        Parameters
+        ----------
+        data : Comparable
+            The value stored in this node (must support comparison operators)
+        """
+        self.data = data          # Store the actual value/key in this node
+        self.left = None          # Pointer to left child node (initially no child)
+        self.right = None         # Pointer to right child node (initially no child)
 
+
+# ===========================  BINARY SEARCH TREE CLASS  ===================
 class BinarySearchTree:
     def __init__(self):
-        self.root = None
+        """
+        Initialize an empty Binary Search Tree.
+        The tree starts with no nodes (root is None).
+        """
+        self.root = None          # Root node pointer (None means empty tree)
     
+    # -------------------------  INSERTION METHODS  -------------------------
     def insert(self, data):
-        if self.root is None:
-            self.root = TreeNode(data)
-        else:
-            self._insert_recursive(self.root, data)
+        """
+        Public method to insert a new value into the BST.
+        This is the main entry point for adding data to the tree.
+        
+        Parameters
+        ----------
+        data : Comparable
+            The value to insert into the tree
+        """
+        if self.root is None:                    # Check if tree is empty
+            self.root = TreeNode(data)           # Create first node as root
+        else:                                    # Tree has existing nodes
+            self._insert_recursive(self.root, data)  # Delegate to recursive helper
     
     def _insert_recursive(self, node, data):
-        if data < node.data:
-            if node.left is None:
-                node.left = TreeNode(data)
-            else:
-                self._insert_recursive(node.left, data)
-        else:
-            if node.right is None:
-                node.right = TreeNode(data)
-            else:
-                self._insert_recursive(node.right, data)
+        """
+        Private recursive helper method that finds the correct position 
+        for new data and inserts it while maintaining BST property.
+        
+        BST Property: Left subtree < Node < Right subtree
+        
+        Parameters
+        ----------
+        node : TreeNode
+            Current node being examined during traversal
+        data : Comparable
+            The value to insert
+        """
+        if data < node.data:                     # New data should go to left subtree
+            if node.left is None:                # Found empty left position
+                node.left = TreeNode(data)       # Create new node as left child
+            else:                                # Left child exists
+                self._insert_recursive(node.left, data)  # Recursively search left subtree
+        else:                                    # New data should go to right subtree (>=)
+            if node.right is None:               # Found empty right position
+                node.right = TreeNode(data)      # Create new node as right child
+            else:                                # Right child exists
+                self._insert_recursive(node.right, data) # Recursively search right subtree
     
+    # -------------------------  SEARCH METHODS  ----------------------------
     def search(self, data):
-        return self._search_recursive(self.root, data)
+        """
+        Public method to search for a value in the BST.
+        Returns the node containing the data if found, None otherwise.
+        
+        Parameters
+        ----------
+        data : Comparable
+            The value to search for
+            
+        Returns
+        -------
+        TreeNode or None
+            The node containing the data, or None if not found
+        """
+        return self._search_recursive(self.root, data)  # Start search from root
     
     def _search_recursive(self, node, data):
-        if node is None or node.data == data:
-            return node
-        if data < node.data:
-            return self._search_recursive(node.left, data)
-        return self._search_recursive(node.right, data)
+        """
+        Private recursive helper that traverses the tree looking for target data.
+        Uses BST property to efficiently navigate: go left if target < current,
+        go right if target > current.
+        
+        Parameters
+        ----------
+        node : TreeNode or None
+            Current node being examined
+        data : Comparable
+            The target value to find
+            
+        Returns
+        -------
+        TreeNode or None
+            The node containing the data, or None if not found
+        """
+        if node is None or node.data == data:    # Base cases: not found OR found
+            return node                          # Return None (not found) or node (found)
+        if data < node.data:                     # Target is smaller than current node
+            return self._search_recursive(node.left, data)   # Search left subtree
+        return self._search_recursive(node.right, data)      # Search right subtree (data > node.data)
     
+    # -------------------------  TRAVERSAL METHODS  -------------------------
     def inorder_traversal(self):
-        result = []
-        self._inorder_recursive(self.root, result)
-        return result
+        """
+        Public method to get all values in the tree in sorted order.
+        In-order traversal of BST gives sorted sequence: Left -> Root -> Right
+        
+        Returns
+        -------
+        list
+            All values in the tree in ascending sorted order
+        """
+        result = []                              # Initialize empty list to collect values
+        self._inorder_recursive(self.root, result)  # Start traversal from root
+        return result                            # Return the collected sorted values
     
     def _inorder_recursive(self, node, result):
-        if node:
-            self._inorder_recursive(node.left, result)
-            result.append(node.data)
-            self._inorder_recursive(node.right, result)
+        """
+        Private recursive helper that performs in-order traversal.
+        Visit pattern: Left subtree -> Current node -> Right subtree
+        This pattern ensures values are collected in sorted order for BST.
+        
+        Parameters
+        ----------
+        node : TreeNode or None
+            Current node being visited
+        result : list
+            List to accumulate the values in order
+        """
+        if node:                                 # Only process if node exists (not None)
+            self._inorder_recursive(node.left, result)   # First: visit all left children
+            result.append(node.data)             # Second: process current node's data
+            self._inorder_recursive(node.right, result)  # Third: visit all right children
+
+# ===========================  DEMONSTRATION  ===============================
+if __name__ == "__main__":
+    # Create a new BST and demonstrate all functionality
+    bst = BinarySearchTree()
+    
+    print("=== BST Demonstration ===")
+    print(f"Initial tree empty: {bst.is_empty()}")
+    print(f"Initial size: {bst.get_size()}")
+    
+    # Insert values
+    values = [50, 30, 70, 20, 40, 60, 80, 10, 25, 35, 45]
+    print(f"\nInserting values: {values}")
+    for val in values:
+        bst.insert(val)
+    
+    print(f"Tree size after insertions: {bst.get_size()}")
+    print(f"Tree height: {bst.get_height()}")
+    print(f"Tree is valid BST: {bst.validate_bst()}")
+    
+    # Demonstrate searches
+    print(f"\nSearch for 40: {bst.search(40)}")
+    print(f"Contains 40: {bst.contains(40)}")
+    print(f"Contains 99: {bst.contains(99)}")
+    
+    # Demonstrate min/max
+    print(f"\nMinimum value: {bst.find_min()}")
+    print(f"Maximum value: {bst.find_max()}")
+    
+    # Demonstrate traversals
+    print(f"\nIn-order traversal: {bst.inorder_traversal()}")
+    print(f"Pre-order traversal: {bst.preorder_traversal()}")
+    print(f"Post-order traversal: {bst.postorder_traversal()}")
+    print(f"Level-order traversal: {bst.level_order_traversal()}")
+    
+    # Demonstrate deletion
+    print(f"\nDeleting 30...")
+    bst.delete(30)
+    print(f"In-order after deletion: {bst.inorder_traversal()}")
+    print(f"Tree size after deletion: {bst.get_size()}")
+    
+    # Convert to list
+    print(f"\nTree as sorted list: {bst.to_list()}")
